@@ -1,8 +1,8 @@
 diff --git a/fs/proc/fd.c b/fs/proc/fd.c
-index ac994a4..4eb5484 100644
+index 1d1184a43f6e..b8a436e7a3d8 100644
 --- a/fs/proc/fd.c
 +++ b/fs/proc/fd.c
-@@ -65,11 +65,70 @@ static int seq_show(struct seq_file *m, void *v)
+@@ -65,10 +65,74 @@ static int seq_show(struct seq_file *m, void *v)
  	if (ret)
  		return ret;
  
@@ -26,7 +26,7 @@ index ac994a4..4eb5484 100644
 +#ifdef CONFIG_KSU_SUSFS_SUS_MOUNT
 +	if (likely(susfs_is_current_proc_umounted())) {
 +		struct mount *mnt = real_mount(file->f_path.mnt);
-+		if (mnt->mnt_id >= DEFAULT_KSU_MNT_ID) {
++		if (mnt->mnt_id >= DEFAULT_KSU_MNT_ID) {	
 +			struct path path;
 +			char *pathname = kmalloc(PAGE_SIZE, GFP_KERNEL);
 +			char *dpath;
@@ -59,17 +59,21 @@ index ac994a4..4eb5484 100644
 +			goto orig_flow;
 +		}
 +	}
-+orig_flow:
-+#endif // #ifdef CONFIG_KSU_SUSFS_SUS_MOUNT
 +
++#endif // #ifdef CONFIG_KSU_SUSFS_SUS_MOUNT
++#if defined(CONFIG_KSU_SUSFS_SUS_MOUNT) || defined(CONFIG_KSU_SUSFS_SUS_KSTAT)
++orig_flow:
++	seq_printf(m, "pos:\t%lli\nflags:\t0%o\nmnt_id:\t%i\nino:\t%lu\n",
++		   (long long)file->f_pos, f_flags,
++		   real_mount(file->f_path.mnt)->mnt_id,
++		   file_inode(file)->i_ino);
++bypass_orig_flow:
++#else
  	seq_printf(m, "pos:\t%lli\nflags:\t0%o\nmnt_id:\t%i\nino:\t%lu\n",
  		   (long long)file->f_pos, f_flags,
  		   real_mount(file->f_path.mnt)->mnt_id,
  		   file_inode(file)->i_ino);
++#endif
  
-+#if defined(CONFIG_KSU_SUSFS_SUS_MOUNT) || defined(CONFIG_KSU_SUSFS_SUS_KSTAT)
-+bypass_orig_flow:
-+#endif // #if defined(CONFIG_KSU_SUSFS_SUS_MOUNT) || defined(CONFIG_KSU_SUSFS_SUS_KSTAT)
  	show_fd_locks(m, file, files);
  	if (seq_has_overflowed(m))
- 		goto out;
